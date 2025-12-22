@@ -1,0 +1,5 @@
+{
+  "name": "Retro Beeper Notes",
+  "description": "A nostalgic sticky note application featuring typewriter sound effects, pixel-art aesthetics, and a functional cassette tape player for background music.",
+  "requestFramePermissions": []
+}
