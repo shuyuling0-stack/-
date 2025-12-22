@@ -2,60 +2,77 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>Motorola Beeper</title>
+    <title>Motorola Fix Beeper - Retro Edition</title>
     <style>
-        /* 基础样式 */
+        :root {
+            --bg: #d8d8c0;
+            --main: #1a1a1a;
+            --accent: #0055ff;
+        }
+
+        * { box-sizing: border-box; }
+
         body {
-            background-color: #d8d8c0;
+            background-color: var(--bg);
+            background-image: radial-gradient(var(--main) 0.5px, transparent 0.5px);
+            background-size: 30px 30px;
             margin: 0;
             padding: 0;
-            font-family: monospace;
+            font-family: 'Courier New', Courier, monospace;
             overflow: hidden;
             height: 100vh;
         }
 
+        /* 绘图画布 */
         #canvas {
             position: absolute;
-            width: 100%;
-            height: 100%;
+            inset: 0;
+            z-index: 1;
         }
 
-        /* 像素卡片样式 */
+        /* 像素便签卡片 */
         .card {
             position: absolute;
-            background: white;
-            border: 2px solid #222;
+            background: #fff;
+            border: 2px solid var(--main);
             padding: 15px;
-            width: 200px;
-            box-shadow: 4px 4px 0px rgba(0,0,0,0.1);
+            width: 220px;
+            box-shadow: 5px 5px 0px rgba(0,0,0,0.1);
             cursor: move;
             white-space: pre-wrap;
             word-wrap: break-word;
-            line-height: 1.5;
+            line-height: 1.4;
+            font-weight: bold;
             z-index: 10;
         }
 
-        /* 控制按钮 */
-        .ui-dock {
+        /* 底部控制栏 */
+        .dock {
             position: fixed;
-            bottom: 20px;
+            bottom: 30px;
             left: 50%;
             transform: translateX(-50%);
             display: flex;
-            gap: 10px;
+            gap: 15px;
             z-index: 100;
         }
 
-        .btn {
-            background: #222;
+        .pixel-btn {
+            background: var(--main);
             color: white;
             border: none;
-            padding: 10px 20px;
+            padding: 12px 24px;
             cursor: pointer;
-            font-size: 14px;
+            font-family: inherit;
+            box-shadow: 4px 4px 0px #888;
         }
 
-        /* 简易弹窗 */
+        .pixel-btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0px #888;
+        }
+
+        /* 复古弹窗 */
         #modal {
             position: fixed;
             inset: 0;
@@ -67,253 +84,170 @@
         }
 
         .modal-box {
-            background: #d8d8c0;
-            border: 3px solid #222;
-            padding: 20px;
+            background: var(--bg);
+            border: 3px solid var(--main);
+            padding: 25px;
             width: 320px;
+            position: relative;
         }
 
         textarea {
             width: 100%;
-            height: 80px;
-            margin-bottom: 10px;
-            display: block;
-            box-sizing: border-box;
-            border: 2px solid #222;
-            padding: 5px;
-            background: #fff;
+            height: 100px;
+            margin: 10px 0;
+            border: 2px solid var(--main);
+            padding: 10px;
+            font-family: inherit;
+            background: #fdfdfd;
+            resize: none;
         }
 
-        /* 磁带播放器样式 */
+        /* 磁带动画 */
         .tape-player {
             background: #333;
-            padding: 15px;
-            border-radius: 10px;
-            border: 3px solid #111;
-            box-shadow: inset 0 0 10px #000;
-            margin-bottom: 15px;
-        }
-
-        .tape-window {
-            background: #1a1a1a;
-            height: 90px;
-            border-radius: 5px;
+            height: 80px;
             display: flex;
-            justify-content: center;
+            justify-content: space-around;
             align-items: center;
-            gap: 40px;
-            position: relative;
-            border: 2px solid #000;
-            overflow: hidden;
-            margin-bottom: 10px;
+            margin: 15px 0;
         }
 
-        /* 磁带卷轴 */
         .reel {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            border: 5px dashed #ccc; /* 齿轮效果 */
-            position: relative;
-            background: transparent;
-        }
-        
-        .reel::after {
-            content: '';
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            width: 15px; height: 15px;
-            background: #333;
+            width: 40px;
+            height: 40px;
+            border: 3px dashed #666;
             border-radius: 50%;
         }
 
-        /* 旋转动画 */
-        .spin {
-            animation: spin 2s linear infinite;
-        }
+        .spinning { animation: spin 2s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
-        @keyframes spin {
-            100% { transform: rotate(360deg); }
-        }
-
-        .status-display {
-            background: #56ef7d;
-            color: #111;
-            font-family: 'Courier New', monospace;
-            padding: 5px;
-            font-size: 12px;
-            text-align: center;
-            border: 2px inset #444;
-            margin-bottom: 10px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        
-        .hidden-file {
-            display: none;
-        }
+        .status-text { font-size: 10px; text-align: center; color: var(--main); }
     </style>
-<script type="importmap">
-{
-  "imports": {
-    "react": "https://esm.sh/react@^19.2.3",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "react/": "https://esm.sh/react@^19.2.3/"
-  }
-}
-</script>
 </head>
 <body>
 
     <div id="canvas"></div>
 
-    <div class="ui-dock">
-        <button class="btn" onclick="openBox('text')">新建便签</button>
-        <button class="btn" onclick="openBox('audio')">磁带播放器</button>
+    <div class="dock">
+        <button class="pixel-btn" onclick="openModal('text')">新建便签</button>
+        <button class="pixel-btn" style="background: var(--accent);" onclick="openModal('audio')">磁带模式</button>
     </div>
 
-    <div id="modal" onclick="if(event.target==this) closeBox()">
+    <div id="modal" onclick="if(event.target==this) closeModal()">
         <div class="modal-box">
             <div id="text-ui">
-                <textarea id="text-input" placeholder="输入文字...&#10;支持回车换行"></textarea>
-                <button class="btn" style="width:100%" onclick="startPrint()">开始打印</button>
+                <div style="font-size: 12px;">INPUT MESSAGE (ENTER TO WRAP):</div>
+                <textarea id="msg-input" placeholder="输入你想说的话..."></textarea>
+                <button class="pixel-btn" style="width:100%" onclick="startPrint()">确认打印</button>
+            </div>
+
+            <div id="audio-ui" style="display:none">
+                <div style="font-size: 12px;">LOAD EXTERNAL TAPE (.MP3):</div>
+                <input type="file" id="file-input" accept="audio/*" style="width:100%; margin: 10px 0;">
+                <div class="tape-player">
+                    <div class="reel" id="reel-1"></div>
+                    <div class="reel" id="reel-2"></div>
+                </div>
+                <div class="status-text" id="audio-status">IDLE</div>
+                <button class="pixel-btn" style="width:100%; margin-top:10px;" onclick="toggleAudio()">播放 / 暂停</button>
             </div>
             
-            <div id="audio-ui" style="display:none">
-                <div class="tape-player">
-                    <div class="status-display" id="tape-status">NO TAPE INSERTED</div>
-                    <div class="tape-window">
-                        <div class="reel" id="reel-1"></div>
-                        <div class="reel" id="reel-2"></div>
-                    </div>
-                </div>
-                
-                <input type="file" id="file-input" accept="audio/*" class="hidden-file">
-                <div style="display: flex; gap: 10px;">
-                    <button class="btn" style="flex:1" onclick="document.getElementById('file-input').click()">LOAD</button>
-                    <button class="btn" id="play-btn" style="flex:1" onclick="toggleAudio()" disabled>PLAY</button>
-                </div>
-            </div>
+            <p onclick="closeModal()" style="text-align:center; font-size:12px; cursor:pointer; text-decoration:underline; margin-top:15px;">[ 返回 ]</p>
         </div>
     </div>
 
-    <audio id="audio-player"></audio>
+    <audio id="main-player"></audio>
 
     <script>
         const modal = document.getElementById('modal');
-        const player = document.getElementById('audio-player');
-        
-        // 打开/关闭弹窗
-        function openBox(mode) {
+        const player = document.getElementById('main-player');
+        const reels = document.querySelectorAll('.reel');
+        let isPrinting = false;
+
+        function openModal(mode) {
             modal.style.display = 'flex';
             document.getElementById('text-ui').style.display = mode === 'text' ? 'block' : 'none';
             document.getElementById('audio-ui').style.display = mode === 'audio' ? 'block' : 'none';
         }
-        function closeBox() { modal.style.display = 'none'; }
 
-        // 打印功能
+        function closeModal() { modal.style.display = 'none'; }
+
+        // 打字机逻辑
         async function startPrint() {
-            const val = document.getElementById('text-input').value || "HELLO";
-            closeBox();
+            const text = document.getElementById('msg-input').value || "EMPTY\nMESSAGE";
+            if(isPrinting) return;
+            isPrinting = true;
+            closeModal();
 
             const card = document.createElement('div');
             card.className = 'card';
-            card.style.left = '50px';
-            card.style.top = '50px';
+            card.style.left = (Math.random() * 50 + 10) + '%';
+            card.style.top = (Math.random() * 50 + 10) + '%';
             document.getElementById('canvas').appendChild(card);
             
-            // 简单拖拽
-            let isDragging = false;
-            let startX, startY, initialLeft, initialTop;
-            
-            card.onmousedown = (e) => { 
-                isDragging = true; 
-                startX = e.clientX;
-                startY = e.clientY;
-                initialLeft = card.offsetLeft;
-                initialTop = card.offsetTop;
-                card.style.zIndex = 100; // Bring to front
-            };
-            
-            document.onmousemove = (e) => {
-                if(isDragging) {
-                    const dx = e.clientX - startX;
-                    const dy = e.clientY - startY;
-                    card.style.left = (initialLeft + dx) + 'px';
-                    card.style.top = (initialTop + dy) + 'px';
-                }
-            };
-            
-            document.onmouseup = () => { isDragging = false; card.style.zIndex = 10; };
+            enableDrag(card);
 
-            // 逐字输出逻辑
-            for (let i = 0; i <= val.length; i++) {
-                card.textContent = val.substring(0, i) + (i < val.length ? '█' : '');
-                playBeep();
-                await new Promise(r => setTimeout(r, 100));
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+            for (let i = 0; i <= text.length; i++) {
+                card.textContent = text.substring(0, i) + (i < text.length ? '█' : '');
+                playClick(audioCtx);
+                // 遇到换行停顿久一点
+                const delay = text[i-1] === '\n' ? 300 : 70 + Math.random() * 50;
+                await new Promise(r => setTimeout(r, delay));
             }
-            document.getElementById('text-input').value = "";
+            isPrinting = false;
         }
 
-        // Web Audio API 提示音
-        function playBeep() {
-            try {
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                const osc = ctx.createOscillator();
-                const g = ctx.createGain();
-                osc.type = 'square';
-                osc.frequency.value = 800;
-                g.gain.setValueAtTime(0.05, ctx.currentTime);
-                g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
-                osc.connect(g);
-                g.connect(ctx.destination);
-                osc.start();
-                osc.stop(ctx.currentTime + 0.1);
-            } catch(e) { console.log("Audio waiting for user click"); }
+        function playClick(ctx) {
+            if(ctx.state === 'suspended') ctx.resume();
+            const osc = ctx.createOscillator();
+            const g = ctx.createGain();
+            osc.type = 'square';
+            osc.frequency.value = 600;
+            g.gain.setValueAtTime(0.05, ctx.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+            osc.connect(g);
+            g.connect(ctx.destination);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.05);
         }
 
-        // 音频播放控制
-        document.getElementById('file-input').onchange = function(e) {
+        // 音频逻辑
+        document.getElementById('file-input').onchange = (e) => {
             const file = e.target.files[0];
             if(file) {
                 player.src = URL.createObjectURL(file);
-                document.getElementById('tape-status').textContent = file.name;
-                document.getElementById('play-btn').disabled = false;
-                document.getElementById('play-btn').textContent = "PLAY";
-                stopSpin();
+                document.getElementById('audio-status').innerText = "READY: " + file.name.substring(0,15) + "...";
             }
         };
 
         function toggleAudio() {
-            const btn = document.getElementById('play-btn');
             if(player.paused) {
                 player.play();
-                btn.textContent = "PAUSE";
-                startSpin();
+                reels.forEach(r => r.classList.add('spinning'));
+                document.getElementById('audio-status').innerText = "STATUS: PLAYING";
             } else {
                 player.pause();
-                btn.textContent = "PLAY";
-                stopSpin();
+                reels.forEach(r => r.classList.remove('spinning'));
+                document.getElementById('audio-status').innerText = "STATUS: PAUSED";
             }
         }
-        
-        function startSpin() {
-            document.getElementById('reel-1').classList.add('spin');
-            document.getElementById('reel-2').classList.add('spin');
+
+        // 基础拖拽
+        function enableDrag(el) {
+            let x = 0, y = 0;
+            el.onmousedown = (e) => {
+                x = e.clientX; y = e.clientY;
+                document.onmousemove = (ev) => {
+                    el.style.left = (el.offsetLeft + ev.clientX - x) + "px";
+                    el.style.top = (el.offsetTop + ev.clientY - y) + "px";
+                    x = ev.clientX; y = ev.clientY;
+                };
+                document.onmouseup = () => { document.onmousemove = null; };
+            };
         }
-        
-        function stopSpin() {
-            document.getElementById('reel-1').classList.remove('spin');
-            document.getElementById('reel-2').classList.remove('spin');
-        }
-        
-        player.onended = () => {
-            document.getElementById('play-btn').textContent = "PLAY";
-            stopSpin();
-        };
     </script>
-    <script type="module"src="/index.tsx"></script>
 </body>
 </html>
